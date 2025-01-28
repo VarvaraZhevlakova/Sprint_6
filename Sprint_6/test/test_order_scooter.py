@@ -7,15 +7,17 @@ import pytest
 class TestOrderScooter:
 
     @pytest.mark.parametrize(
-        "order_button_position, rental_period, scooter_color, expected_url",
+        "order_button_position, rental_period, scooter_color",
         [
-            ("bottom", "двое суток", "grey", yandex_url),
-            ("bottom", "четверо суток", "black", yandex_url),
-            ("top", "двое суток", "grey", yandex_url),
-            ("top", "четверо суток", "black", yandex_url)
+            ("bottom", "двое суток", "grey"),
+            ("bottom", "четверо суток", "black"),
+            ("top", "двое суток", "grey"),
+            ("top", "четверо суток", "black")
         ]
     )
-    def test_order_scooter(self, driver, order_button_position, rental_period, scooter_color, expected_url):
+    @allure.title('Проверяем успешность оформление заказа скутера с разным набором данных')
+    @allure.description('После нажатия на кнопки "Заказ" в разных местах, заполняем формы и выполняем сам заказ')
+    def test_order_scooter_success(self, driver, order_button_position, rental_period, scooter_color):
         driver.get(base_url_scooter)
 
         main_page = MainPage(driver)
@@ -47,15 +49,50 @@ class TestOrderScooter:
         main_page.click_confirm_yes_button()
 
         assert main_page.wait_visibility_of_element(
-            main_page.locators.success_modal), "Окно с сообщением об успешном заказе не появилось."
+            main_page.locators.success_modal
+        ), "Окно с сообщением об успешном заказе не появилось."
         main_page.click_view_status_button()
 
+    @pytest.mark.parametrize(
+        "order_button_position, rental_period, scooter_color",
+        [
+            ("bottom", "двое суток", "grey"),
+            ("bottom", "четверо суток", "black"),
+            ("top", "двое суток", "grey"),
+            ("top", "четверо суток", "black")
+        ]
+    )
+    @allure.title('Проверяем попадаение на главную страницу, после нажатия на лого "Самоката"')
+    @allure.description('После успешного оформления заказа, нажимаем на лого "Самоката" и проверяем переход на главную страницу')
+    def test_redirect_to_homepage(self, driver, order_button_position, rental_period, scooter_color):
+        self.test_order_scooter_success(driver, order_button_position, rental_period, scooter_color)
+
+        main_page = MainPage(driver)
         main_page.click_logo()
         main_page.verify_redirect_to_homepage()
+
         assert driver.current_url == base_url_scooter, "Переход на главную страницу не произошел."
 
+        main_page.close_driver()
+
+    @pytest.mark.parametrize(
+        "order_button_position, rental_period, scooter_color, expected_url",
+        [
+            ("bottom", "двое суток", "grey", yandex_url),
+            ("bottom", "четверо суток", "black", yandex_url),
+            ("top", "двое суток", "grey", yandex_url),
+            ("top", "четверо суток", "black", yandex_url)
+        ]
+    )
+    @allure.title('Проверяем редирект на Дзен после нажатия на лого Яндекса')
+    @allure.description('После успешного оформления заказа, нажимаем на лого "Яндекса" и проверяем редирект на страницу Дзен')
+    def test_redirect_to_yandex(self, driver, order_button_position, rental_period, scooter_color, expected_url):
+        self.test_order_scooter_success(driver, order_button_position, rental_period, scooter_color)
+
+        main_page = MainPage(driver)
         main_page.click_yandex_logo()
         main_page.verify_url_contains(yandex_url)
+
         assert driver.current_url == expected_url, f"Переход на страницу Яндекса не произошел. Ожидался URL: {expected_url}"
 
         main_page.close_driver()
